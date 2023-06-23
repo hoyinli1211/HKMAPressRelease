@@ -1,10 +1,9 @@
-import streamlit as st
-import requests
+import urllib.request
+import json
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
-import urllib.request
-import json
+import requests
 
 
 def fetch_press_releases():
@@ -19,19 +18,23 @@ def topic_modeling(data, n_topics=5):
     tfidf = vectorizer.fit_transform(data)
     nmf = NMF(n_components=n_topics, random_state=1).fit(tfidf)
     topic_labels = nmf.transform(tfidf).argmax(axis=1)
-    return topic_labels
+
+    # Get the top words for each topic
+    feature_names = vectorizer.get_feature_names_out()
+    top_words = []
+    for topic_idx, topic in enumerate(nmf.components_):
+        top_n_words = [feature_names[i] for i in topic.argsort()[:-6:-1]]
+        top_words.append(", ".join(top_n_words))
+
+    return topic_labels, top_words
 
 
 def main():
-    st.title("HKMA Press Releases Topic Categorization")
-
-    st.write("Fetching press releases data from HKMA OpenAPI...")
     press_releases_data = fetch_press_releases()
 
     # Sort by date and take the top 10
     press_releases_data = sorted(press_releases_data, key=lambda x: x['date'], reverse=True)[:10]
-    st.dataframe(press_releases_data)
-    
+
     data = []
     titles = []
     for item in press_releases_data:
@@ -42,15 +45,17 @@ def main():
         data.append(content)
 
     if data:
-        st.write(f"Number of press releases: {len(data)}")
-        n_topics = st.slider("Select the number of topics:", 1, 10, 5)
-        topic_labels = topic_modeling(data, n_topics=n_topics)
+        n_topics = 5
+        topic_labels, top_words = topic_modeling(data, n_topics=n_topics)
 
-        st.write("Topic labels assigned to press releases:")
-        for idx, topic_label in enumerate(topic_labels):
-            st.write(f"Press release {idx + 1}: Topic {topic_label + 1}")
+        # Add topic labels and names to the DataFrame
+        df = pd.DataFrame(press_releases_data)
+        df['topic'] = topic_labels
+        df['topic_name'] = [top_words[label] for label in topic_labels]
+
+        st.dataframe(df)
     else:
-        st.error("No data available.")
+        print("No data available.")
 
 
 if __name__ == "__main__":
