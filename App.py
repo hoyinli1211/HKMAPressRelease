@@ -30,7 +30,8 @@ def main():
 
     # Sort by date and take the top 10
     press_releases_data = sorted(press_releases_data, key=lambda x: x['date'], reverse=True)[:10]
-
+    st.dataframe(press_releases_data)
+    
     data = []
     titles = []
     for item in press_releases_data:
