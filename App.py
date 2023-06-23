@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 def fetch_press_releases():
     url = 'https://api.hkma.gov.hk/public/press-releases?lang=en&offset=0'
     with urllib.request.urlopen(url) as req:
-        data = json.loads(req.read())
+        data = json.loads(req.read())['result']['records']
     return data
 
 
