@@ -33,7 +33,7 @@ df = pd.DataFrame(records)
 
 # Fetch press release content
 content_list = []
-for link in df['link_en']:
+for link in df['link']:
     content = fetch_press_release_content(link)
     content_list.append(content)
 
