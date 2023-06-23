@@ -53,7 +53,7 @@ def main():
         df['topic'] = topic_labels
         df['topic_name'] = [top_words[label] for label in topic_labels]
 
-        st.dataframe(df)
+        df
     else:
         print("No data available.")
 
