@@ -2,5 +2,4 @@ streamlit
 requests
 pandas
 scikit-learn
-json
 beautifulsoup4
