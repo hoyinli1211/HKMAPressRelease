@@ -1,70 +1,47 @@
-import streamlit as st
-import requests
+import urllib.request
+import json
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
-import urllib.request
-import json
 from bs4 import BeautifulSoup
+import requests
 
 
-def fetch_press_releases():
-    url = 'https://api.hkma.gov.hk/public/press-releases?lang=en&offset=0'
-    with urllib.request.urlopen(url) as req:
-        data = json.loads(req.read())['result']['records']
-    return data
+def fetch_press_release_content(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.content, 'html.parser')
+    content = soup.get_text()
+    return content
 
 
-def topic_modeling(data, n_topics=5, n_top_words=10):
+def topic_modeling(data, n_topics=5):
     vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
     tfidf = vectorizer.fit_transform(data)
     nmf = NMF(n_components=n_topics, random_state=1).fit(tfidf)
-    feature_names = vectorizer.get_feature_names_out()
-
-    topics = []
-    for topic_idx, topic in enumerate(nmf.components_):
-        top_words = [feature_names[i] for i in topic.argsort()[:-n_top_words - 1:-1]]
-        topics.append(f"Topic {topic_idx + 1}: {', '.join(top_words)}")
-    return topics
+    topic_labels = nmf.transform(tfidf).argmax(axis=1)
+    return topic_labels
 
 
-def main():
-    st.title("HKMA Press Releases Topic Categorization")
+url = 'https://api.hkma.gov.hk/public/press-releases?lang=en&offset=0'
 
-    st.write("Fetching press releases data from HKMA OpenAPI...")
-    press_releases_data = fetch_press_releases()
+with urllib.request.urlopen(url) as req:
+    data = json.loads(req.read())
 
-    df = pd.DataFrame(press_releases_data)
-    st.dataframe(df)
-    
-    data = []
-    titles = []
-    for item in press_releases_data:
-        titles.append(item["title"])
-        content_url = item["link"]
-        content = fetch_press_release_content(content_url)
-        data.append(content)
+records = data['result']['records']
+df = pd.DataFrame(records)
 
-    if data:
-        st.write(f"Number of press releases: {len(data)}")
-        n_topics = st.slider("Select the number of topics:", 1, 10, 5)
-        topics = topic_modeling(data, n_topics=n_topics)
+# Fetch press release content
+content_list = []
+for link in df['link_en']:
+    content = fetch_press_release_content(link)
+    content_list.append(content)
 
-        st.write("Topics:")
-        for topic in topics:
-            st.write(topic)
+# Perform topic modeling
+n_topics = 5
+topic_labels = topic_modeling(content_list, n_topics=n_topics)
 
-        selected_topic = st.selectbox("Select a topic to view related press releases:", list(range(1, n_topics + 1)))
-        topic_idx = selected_topic - 1
-        topic_words = set(topics[topic_idx].replace("Topic", "").split(": ")[1].split(", "))
+# Add topic labels to the DataFrame
+df['topic'] = topic_labels
 
-        st.write(f"Press releases in Topic {selected_topic}:")
-        for idx, text in enumerate(data):
-            if len(topic_words.intersection(set(text.lower().split()))) > 0:
-                st.write(f"- {titles[idx]}")
-    else:
-        st.error("No data available.")
-
-
-if __name__ == "__main__":
-    main()
+print(df)
