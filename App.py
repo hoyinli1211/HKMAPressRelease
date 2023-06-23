@@ -5,6 +5,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
 import urllib.request
 import json
+from bs4 import BeautifulSoup
 
 
 def fetch_press_releases():
@@ -12,6 +13,14 @@ def fetch_press_releases():
     with urllib.request.urlopen(url) as req:
         data = json.loads(req.read())["result"]["records"]
     return data
+
+
+def fetch_press_release_content(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.content, 'html.parser')
+    content = soup.get_text()
+    return content
 
 
 def topic_modeling(data, n_topics=5, n_top_words=10):
@@ -33,8 +42,13 @@ def main():
     st.write("Fetching press releases data from HKMA OpenAPI...")
     press_releases_data = fetch_press_releases()
 
-    data = [item["details_en"] for item in press_releases_data]
-    titles = [item["title_en"] for item in press_releases_data]
+    data = []
+    titles = []
+    for item in press_releases_data:
+        titles.append(item["title_en"])
+        content_url = item["link_en"]
+        content = fetch_press_release_content(content_url)
+        data.append(content)
 
     if data:
         st.write(f"Number of press releases: {len(data)}")
