@@ -11,16 +11,8 @@ from bs4 import BeautifulSoup
 def fetch_press_releases():
     url = 'https://api.hkma.gov.hk/public/press-releases?lang=en&offset=0'
     with urllib.request.urlopen(url) as req:
-        data = json.loads(req.read())["result"]["records"]
+        data = json.loads(req.read())
     return data
-
-
-def fetch_press_release_content(url):
-    response = requests.get(url)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.content, 'html.parser')
-    content = soup.get_text()
-    return content
 
 
 def topic_modeling(data, n_topics=5, n_top_words=10):
@@ -45,8 +37,8 @@ def main():
     data = []
     titles = []
     for item in press_releases_data:
-        titles.append(item["title_en"])
-        content_url = item["link_en"]
+        titles.append(item["title"])
+        content_url = item["link"]
         content = fetch_press_release_content(content_url)
         data.append(content)
 
