@@ -28,6 +28,9 @@ def main():
     st.write("Fetching press releases data from HKMA OpenAPI...")
     press_releases_data = fetch_press_releases()
 
+    # Sort by date and take the top 10
+    press_releases_data = sorted(press_releases_data, key=lambda x: x['date'], reverse=True)[:10]
+
     data = []
     titles = []
     for item in press_releases_data:
