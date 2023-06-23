@@ -3,13 +3,14 @@ import requests
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import NMF
+import urllib.request
+import json
 
 
 def fetch_press_releases():
-    base_url = "https://api.hkma.gov.hk/public/press-releases"
-    response = requests.get(base_url)
-    response.raise_for_status()
-    data = response.json()["result"]["records"]
+    url = 'https://api.hkma.gov.hk/public/press-releases?lang=en&offset=0'
+    with urllib.request.urlopen(url) as req:
+        data = json.loads(req.read())["result"]["records"]
     return data
 
 
