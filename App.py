@@ -34,6 +34,9 @@ def main():
     st.write("Fetching press releases data from HKMA OpenAPI...")
     press_releases_data = fetch_press_releases()
 
+    df = pd.DataFrame(press_releases_data)
+    st.dataframe(df)
+    
     data = []
     titles = []
     for item in press_releases_data:
